@@ -161,17 +161,7 @@ const useImageUrl = (
 
 };
 
-/* ==========================================================
-   PART 2 STARTS HERE
 
-   saveComputerLaboratory()
-
-   - Load Existing Document
-   - Parse JSON
-   - Banner Upload
-   - Side Image Upload
-
-========================================================== */
 /* ==========================================================
    CREATE / UPDATE
    (Single Document CMS)
@@ -371,14 +361,6 @@ export const saveComputerLaboratory =
 
       }
 
-      /* ======================================
-         PART 3 STARTS HERE
-
-         Laboratory Unit Images
-         Prepare Payload
-         Create / Update
-
-      ====================================== */
             /* ======================================
          LABORATORY UNIT IMAGES
       ====================================== */
@@ -607,14 +589,6 @@ export const saveComputerLaboratory =
 
   };
 
-/* ==========================================================
-   PART 4 STARTS HERE
-
-   getComputerLaboratory()
-
-   deleteComputerLaboratory()
-
-========================================================== */
 /* ==========================================================
    GET COMPUTER LABORATORY
 ========================================================== */
