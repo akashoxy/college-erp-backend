@@ -61,15 +61,28 @@ export const loadStudents =
         semester,
       } = req.query;
 
-      const semesterNumber =
-        Number(
-          semester
-            ?.toString()
-            .replace(
-              "Semester ",
-              ""
-            )
-        );
+      // const semesterNumber =
+      //   Number(
+      //     semester
+      //       ?.toString()
+      //       .replace(
+      //         "Semester ",
+      //         ""
+      //       )
+      //   );
+
+      // Backend: robust numeric extraction instead of assuming "Semester X"
+const semesterNumber = Number(
+  semester?.toString().match(/\d+/)?.[0]
+);
+
+if (!stream || !semester || Number.isNaN(semesterNumber)) {
+  return errorResponse(
+    res,
+    400,
+    "Valid stream and semester are required."
+  );
+}
 
       /* ======================================
          VALIDATION
