@@ -117,21 +117,18 @@ export const createOrUpdateFeeStructure =
           notes
         );
 
-      const totalFee =
-        Number(
-          admissionFee || 0
-        ) +
-        parsedFees.reduce(
-          (
-            total,
-            semester
-          ) =>
-            total +
-            Number(
-              semester.amount
-            ),
-          0
-        );
+const admissionAmount = Number(admissionFee || 0);
+
+const totalSemesterFees = parsedFees.reduce(
+  (sum, semester, index) => {
+    if (index === 0) return sum; // Semester 1 is included in Admission Fee
+    return sum + Number(semester.amount || 0);
+  },
+  0
+);
+
+const totalFee = admissionAmount + totalSemesterFees;
+
 
       /* ======================================
          FIND OR CREATE
