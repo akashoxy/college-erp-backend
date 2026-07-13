@@ -9,23 +9,18 @@ import {
    VALIDATE SEMESTER
 ============================================================================= */
 
-const validateSemester = (
-  stream,
-  semester
-) => {
-  const sem = Number(semester);
+const validateSemester = (stream, semester) => {
+  const sem = parseInt(semester.replace(/\D/g, ""), 10);
 
-  if (
-    stream === "MCA" &&
-    (sem < 1 || sem > 4)
-  ) {
+  if (isNaN(sem)) {
+    return "Invalid semester.";
+  }
+
+  if (stream === "MCA" && (sem < 1 || sem > 4)) {
     return "MCA has only 4 semesters.";
   }
 
-  if (
-    ["BCA", "BBA"].includes(stream) &&
-    (sem < 1 || sem > 8)
-  ) {
+  if (["BCA", "BBA"].includes(stream) && (sem < 1 || sem > 8)) {
     return `${stream} has only 8 semesters.`;
   }
 
