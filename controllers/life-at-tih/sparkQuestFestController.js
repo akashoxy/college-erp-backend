@@ -71,22 +71,64 @@ const updateData = {
 ========================================== */
 
 if (Array.isArray(updateData.whyParticipate)) {
+  updateData.whyParticipate = updateData.whyParticipate.map((item) => ({
+    title: item.title || "",
+    image: typeof item.image === "string" ? item.image : "",
+    imagePublicId: item.imagePublicId || "",
+  }));
 
-  updateData.whyParticipate =
-    updateData.whyParticipate.map((item) => ({
+  const whyImageFiles = req.files?.filter(
+    (file) => file.fieldname === "whyImages"
+  ) || [];
 
-      title: item.title || "",
+  for (
+    let i = 0;
+    i < updateData.whyParticipate.length;
+    i++
+  ) {
+    const file = whyImageFiles[i];
 
-      image:
-        typeof item.image === "string"
-          ? item.image
-          : "",
+    if (!file) continue;
 
-      imagePublicId:
-        item.imagePublicId || "",
+    // delete previous image if replacing
+    if (
+      sparkQuest?.whyParticipate?.[i]?.imagePublicId
+    ) {
+      await deleteFromCloudinary(
+        sparkQuest.whyParticipate[i].imagePublicId,
+        "image"
+      );
+    }
 
-    }));
+    const uploaded =
+      await uploadImageToCloudinary(
+        file,
+        "spark-quest/why-participate"
+      );
 
+    updateData.whyParticipate[i].image =
+      uploaded.secure_url;
+
+    updateData.whyParticipate[i].imagePublicId =
+      uploaded.public_id;
+  }
+
+  // Preserve existing image if no new file was uploaded
+ const existingCards = sparkQuest?.whyParticipate || [];
+
+updateData.whyParticipate = updateData.whyParticipate.map(
+  (card, index) => ({
+    ...card,
+    image:
+      card.image ||
+      existingCards[index]?.image ||
+      "",
+    imagePublicId:
+      card.imagePublicId ||
+      existingCards[index]?.imagePublicId ||
+      "",
+  })
+);
 }
 
       /* ==========================================
@@ -103,15 +145,19 @@ if (Array.isArray(updateData.whyParticipate)) {
       if (heroImageFile) {
 
         if (
-          sparkQuest?.heroImagePublicId
-        ) {
-
-          await deleteFromCloudinary(
-            sparkQuest.heroImagePublicId,
-            "image"
-          );
-
-        }
+  Array.isArray(
+    sparkQuest?.whyParticipate
+  )
+) {
+  for (const card of sparkQuest.whyParticipate) {
+    if (card.imagePublicId) {
+      await deleteFromCloudinary(
+        card.imagePublicId,
+        "image"
+      );
+    }
+  }
+}
 
         const uploaded =
           await uploadImageToCloudinary(
