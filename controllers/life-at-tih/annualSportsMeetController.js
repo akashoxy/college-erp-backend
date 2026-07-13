@@ -80,6 +80,37 @@ const removeImagesSafely = async (items = [], label) => {
   });
 };
 
+// Builds the mongoose update payload from req.body, but ONLY includes
+// keys that were actually present in the request. This matters a lot
+// for the array fields (highlights, sportsEvents, achievements,
+// timeline): the frontend has several independent forms (basic info,
+// events, achievements) that each submit only a subset of these
+// fields. If we always forced every array key onto the payload,
+// `parseArray(undefined)` would resolve to `[]` and a save from one
+// form (e.g. saving the hero image) would silently wipe out data
+// managed by a different form (e.g. sports events / achievements)
+// that it never sent and was never meant to touch.
+const buildUpdatePayload = (body) => {
+  const payload = { ...body };
+
+  const arrayFields = [
+    "highlights",
+    "sportsEvents",
+    "achievements",
+    "timeline",
+  ];
+
+  arrayFields.forEach((field) => {
+    if (body[field] !== undefined) {
+      payload[field] = parseArray(body[field]);
+    } else {
+      delete payload[field];
+    }
+  });
+
+  return payload;
+};
+
 // ==========================================================
 // GET ANNUAL SPORTS MEET
 // ==========================================================
@@ -114,32 +145,26 @@ export const createOrUpdateAnnualSportsMeet = async (req, res) => {
   try {
     let sports = await AnnualSportsMeet.findOne();
 
-    const payload = {
-      ...req.body,
-
-      highlights: parseArray(req.body.highlights),
-      sportsEvents: parseArray(req.body.sportsEvents),
-      achievements: parseArray(req.body.achievements),
-      timeline: parseArray(req.body.timeline),
-    };
-
-    if (req.file) {
-      await removeImage(sports?.heroImagePublicId, "hero image");
-
-      const uploaded = await uploadImage(req.file, "annual-sports");
-
-      if (uploaded) {
-        payload.heroImage = uploaded.secure_url;
-        payload.heroImagePublicId = uploaded.public_id;
-      }
-    }
+    // Only fields actually present in req.body end up in the payload.
+    // See buildUpdatePayload() for why this matters — it stops a
+    // basic-info-only save (e.g. just the hero image) from wiping out
+    // sportsEvents/achievements that this request never sent.
+    const payload = buildUpdatePayload(req.body);
 
     if (!sports) {
       sports = await AnnualSportsMeet.create(payload);
     } else {
+      // IMPORTANT: must be wrapped in `$set`. A plain object with no
+      // atomic operator is treated by MongoDB as a full REPLACEMENT
+      // of the document (everything except _id), not a partial merge.
+      // Since `payload` intentionally omits keys the current form
+      // never sent (see buildUpdatePayload above — e.g. a hero-image-only
+      // save omits sportsEvents/achievements), a plain-object update
+      // would silently delete those omitted fields instead of leaving
+      // them alone. `$set` only touches the keys actually present.
       sports = await AnnualSportsMeet.findByIdAndUpdate(
         sports._id,
-        payload,
+        { $set: payload },
         {
           new: true,
           runValidators: true,
@@ -165,6 +190,63 @@ export const createOrUpdateAnnualSportsMeet = async (req, res) => {
       "Failed to save Annual Sports Meet.",
       error
     );
+  }
+};
+
+// ==========================================================
+// UPDATE HERO IMAGE (dedicated, atomic — image only)
+// ==========================================================
+//
+// Kept completely separate from createOrUpdateAnnualSportsMeet on
+// purpose. That endpoint saves whatever the "basic info" form has in
+// state at the time, which is a much bigger surface area and can go
+// stale relative to sportsEvents/achievements if those were changed
+// in another tab/flow moments earlier. This endpoint's $set payload
+// contains ONLY heroImage + heroImagePublicId, so it is structurally
+// impossible for a hero image change to affect any other field,
+// regardless of timing or what the rest of the form currently holds.
+
+export const updateHeroImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return errorResponse(res, 400, "No image file was provided.");
+    }
+
+    const sports = await getSportsDocument();
+
+    const uploaded = await uploadImage(req.file, "annual-sports");
+
+    if (!uploaded) {
+      return errorResponse(res, 500, "Failed to upload hero image.");
+    }
+
+    // Delete the old Cloudinary image only after the new one has
+    // uploaded successfully, and only best-effort (see removeImage).
+    const previousPublicId = sports.heroImagePublicId;
+
+    const updated = await AnnualSportsMeet.findByIdAndUpdate(
+      sports._id,
+      {
+        $set: {
+          heroImage: uploaded.secure_url,
+          heroImagePublicId: uploaded.public_id,
+        },
+      },
+      { new: true, runValidators: true }
+    );
+
+    await removeImage(previousPublicId, "hero image");
+
+    return successResponse(
+      res,
+      200,
+      "Hero image updated successfully.",
+      updated
+    );
+  } catch (error) {
+    console.error("[AnnualSportsMeet] updateHeroImage failed:", error);
+
+    return errorResponse(res, 500, "Failed to update hero image.", error);
   }
 };
 

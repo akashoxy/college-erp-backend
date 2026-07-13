@@ -3,6 +3,7 @@ import express from "express";
 import {
   getAnnualSportsMeet,
   createOrUpdateAnnualSportsMeet,
+  updateHeroImage,
   deleteAnnualSportsMeet,
 
   addSportsEvent,
@@ -44,8 +45,14 @@ router.use(
 ========================================================== */
 
 router.put(
-  "/",
+  "/hero-image",
   uploadImage.single("heroImage"),
+  updateHeroImage
+);
+
+router.put(
+  "/",
+  uploadImage.none(),
   createOrUpdateAnnualSportsMeet
 );
 
