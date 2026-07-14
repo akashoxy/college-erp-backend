@@ -160,29 +160,7 @@ export const saveAntiRagging =
           "heroBackgroundImage"
         );
 
-      if (
-        useImageUrl(
-          data.heroBackgroundImage
-        )
-      ) {
-
-        if (
-          antiRagging
-            ?.heroBackgroundImagePublicId
-        ) {
-
-          await removeImage(
-            antiRagging.heroBackgroundImagePublicId
-          );
-
-        }
-
-        data.heroBackgroundImagePublicId =
-          "";
-
-      }
-
-      else if (
+     if (
         heroFile
       ) {
 
@@ -208,6 +186,28 @@ export const saveAntiRagging =
 
         data.heroBackgroundImagePublicId =
           upload.public_id;
+
+      }
+
+      else if (
+        useImageUrl(
+          data.heroBackgroundImage
+        )
+      ) {
+
+        if (
+          antiRagging
+            ?.heroBackgroundImagePublicId
+        ) {
+
+          await removeImage(
+            antiRagging.heroBackgroundImagePublicId
+          );
+
+        }
+
+        data.heroBackgroundImagePublicId =
+          "";
 
       }
 
