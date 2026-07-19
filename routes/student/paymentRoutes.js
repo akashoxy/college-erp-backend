@@ -7,6 +7,7 @@ import {
   createOrder,
   verifyPayment,
   getAllPayments,
+  getMyDetails,
   getStudentData,
   getPaymentStatus,
   deletePayment,
@@ -15,24 +16,43 @@ import {
 const router = express.Router();
 
 /* ==========================================================================
-   PUBLIC ROUTES
+   STUDENT ROUTES (require a logged-in student)
 ============================================================================= */
+
+// GET MY OWN DETAILS — used to auto-fill the fees payment form
+router.get(
+  "/me",
+  authMiddleware,
+  roleMiddleware("student"),
+  getMyDetails
+);
 
 // CREATE PAYMENT ORDER
 router.post(
-  "/create-order",
-  createOrder
+    "/create-order",
+    authMiddleware,
+    roleMiddleware("student"),
+    createOrder
 );
 
 // VERIFY PAYMENT
 router.post(
-  "/verify-payment",
-  verifyPayment
+    "/verify-payment",
+    authMiddleware,
+    roleMiddleware("student"),
+    verifyPayment
 );
 
-// GET STUDENT PAYMENT HISTORY
+/* ==========================================================================
+   ADMIN-ONLY: LOOK UP ANY STUDENT'S PAYMENT HISTORY BY ID
+   (this used to be public with no auth check — anyone could pull any
+   student's payment history just by knowing/guessing their ID)
+============================================================================= */
+
 router.get(
   "/student/:studentId",
+  authMiddleware,
+  roleMiddleware("admin"),
   getStudentData
 );
 

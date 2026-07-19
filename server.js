@@ -67,6 +67,7 @@ import noticeRoutes from "./routes/notice/noticeRoutes.js";
 import paymentRoutes from "./routes/student/paymentRoutes.js";
 import previousQuestionRoutes from "./routes/student/previousQuestionRoutes.js";
 import syllabusRoutes from "./routes/student/syllabusRoutes.js";
+import notificationRoutes from "./routes/student/NotificationRoutes.js";
 
 // admission 
 import programRoutes from "./routes/admission/programRoutes.js";
@@ -218,6 +219,10 @@ app.use(
 app.use(
   "/api/payments",
   paymentRoutes
+);
+app.use(
+  "/api/notifications",
+  notificationRoutes
 );
 
 app.use("/api/admissions", admissionRoutes);

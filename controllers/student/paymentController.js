@@ -33,16 +33,17 @@ export const createOrder = async (
 
   try {
 
+    /* =====================================================
+       ONLY THE PURPOSE + AMOUNT COME FROM THE STUDENT.
+       Everything else (name, email, phone, stream, semester,
+       studentId) is derived server-side from the logged-in
+       student's own record — never trust the client for this.
+    ====================================================== */
+
     const {
 
-      studentName,
-      studentId,
-      email,
-      phone,
-      stream,
-      semester,
       paymentPurpose,
-      amount,
+      amount
 
     } = req.body;
 
@@ -52,12 +53,6 @@ export const createOrder = async (
 
     if (
 
-      !studentName ||
-      !studentId ||
-      !email ||
-      !phone ||
-      !stream ||
-      !semester ||
       !paymentPurpose ||
       !amount
 
@@ -67,7 +62,7 @@ export const createOrder = async (
 
         res,
 
-        "All fields are required.",
+        "Payment purpose and amount are required.",
 
         400
 
@@ -100,6 +95,22 @@ export const createOrder = async (
 
     }
 
+    const student = await Student.findById(req.user.id);
+
+    if (!student) {
+
+      return errorResponse(
+
+        res,
+
+        "Student not found.",
+
+        404
+
+      );
+
+    }
+
     /* =====================================================
        DUPLICATE PENDING PAYMENT CHECK
     ====================================================== */
@@ -107,7 +118,7 @@ export const createOrder = async (
     const existingPayment =
       await Payment.findOne({
 
-        studentId,
+        studentId: student._id.toString(),
 
         paymentPurpose,
 
@@ -158,17 +169,17 @@ export const createOrder = async (
     const payment =
       await Payment.create({
 
-        studentName,
+        studentName: student.name,
 
-        studentId,
+        studentId: student._id.toString(),
 
-        email,
+        email: student.email,
 
-        phone,
+        phone: student.phone,
 
-        stream,
+        stream: student.stream,
 
-        semester,
+        semester: String(student.semester),
 
         paymentPurpose,
 
@@ -607,6 +618,74 @@ export const getAllPayments = async (
       res,
 
       "Failed to fetch payments.",
+
+      500,
+
+      error.message
+
+    );
+
+  }
+
+};
+
+/* ==========================================================================
+   GET LOGGED-IN STUDENT'S OWN DETAILS (for auto-filling the fees form)
+============================================================================= */
+
+export const getMyDetails = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const student =
+      await Student.findById(
+        req.user.id
+      )
+        .select("-password")
+        .lean();
+
+    if (!student) {
+
+      return errorResponse(
+
+        res,
+
+        "Student not found.",
+
+        404
+
+      );
+
+    }
+
+    return successResponse(
+
+      res,
+
+      "Student details fetched successfully.",
+
+      { student }
+
+    );
+
+  } catch (error) {
+
+    console.error(
+
+      "GET MY DETAILS ERROR:",
+
+      error
+
+    );
+
+    return errorResponse(
+
+      res,
+
+      "Failed to fetch student details.",
 
       500,
 
